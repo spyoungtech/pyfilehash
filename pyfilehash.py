@@ -43,7 +43,9 @@ class FileLoader(object):
                 box.ui.boxRoot.after(0, self.read)
             except StopIteration:
                 self.complete = True
-                try: 
+                try:
+                    #Odd exception thrown in some cases.
+                    #No issues caused by catching/passing it...
                     box.ui.boxRoot.destroy()
                 except:
                     pass
@@ -59,54 +61,57 @@ hash_dict = {"md5": md5,
              "sha384": sha384,
              "sha512": sha512,
              "*": "*"}
-
-parser = argparse.ArgumentParser()
-parser.add_argument("algorithm", help="The algorithm to use, I.E MD5, SHA1, SHA256, etc.",)
-parser.add_argument("path", help="The path of the file. Can be relative or absolute.")
-parser.add_argument("-q", "--quiet", action="store_true", help="Quiet flag. Supresses GUI")
-args = parser.parse_args()
-
-
-
-if args.algorithm.lower() not in hash_dict:
-    raise ValueError("Invalid algorithm '{}'".format(args.algorithm))
-
-if not os.path.isfile(args.path):
-    raise ValueError("Invalid file path: '{}'\nMust be relative or absolute path to a file.".format(args.path))
-
-#hash_func = hash_dict[args.algorithm.lower()]
-
-if not args.quiet:
-    import easygui as eg
-    box = eg.buttonbox(msg="Loading...\nProgress: 0%", title="PyFileHash", choices=["Cancel"], cancel_choice="Cancel", run=False)
-    icon_path = __file__.replace("pyfilehash.py", "pfh.ico")
-    box.ui.boxRoot.iconbitmap(icon_path)
-
-start = time.time()
-
-f = FileLoader(args.path, args.algorithm.lower())
-if not args.quiet:
-    box.ui.boxRoot.after(0, f.read)
-    try:
-        box.run()
-    except Exception as e:
-        pass
-
-if not f.complete:
-    sys.exit(1)
-
-else:
-    f.read()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("algorithm", help="The algorithm to use, I.E MD5, SHA1, SHA256, etc. ",)
+    parser.add_argument("path", help="The path of the file. Can be relative or absolute.")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Quiet flag. Supresses GUI")
+    args = parser.parse_args()
 
 
-hashes = {algo: h.hexdigest() for algo, h in f.hashes.items()}
-end = time.time()
-t = end - start
-results = '\n\n'.join("{}: {}".format(algo.upper(), h) for algo, h in sorted(hashes.items()))
 
-message = "Results for {}:\n\n{}\nCompleted in {} seconds".format(os.path.abspath(args.path), results,t )
-print(message)
-if not args.quiet:
-    mbox = eg.buttonbox(msg=message, title="PyFileHash", choices=["OK"], cancel_choice="OK", run=False)
-    mbox.ui.boxRoot.iconbitmap(icon_path)
-    mbox.run()
+    if args.algorithm.lower() not in hash_dict:
+        raise ValueError("Invalid algorithm '{}'".format(args.algorithm))
+
+    if not os.path.isfile(args.path):
+        raise ValueError("Invalid file path: '{}'\nMust be relative or absolute path to a file.".format(args.path))
+
+
+    if not args.quiet:
+        import easygui as eg
+        box = eg.buttonbox(msg="Loading...\nProgress: 0%", title="PyFileHash", choices=["Cancel"], cancel_choice="Cancel", run=False)
+        icon_path = __file__.replace("pyfilehash.py", "pfh.ico")
+        box.ui.boxRoot.iconbitmap(icon_path)
+
+    start = time.time()
+
+    f = FileLoader(args.path, args.algorithm.lower())
+    if not args.quiet:
+        box.ui.boxRoot.after(0, f.read)
+        try:
+            #box is destroyed before end, causes exception
+            #no apparent harm in catching/passing it.
+            box.run()
+        except Exception as e:
+            pass
+    else:
+        f.read()
+
+
+
+    if not f.complete:
+        sys.exit(1)
+
+
+
+    hashes = {algo: h.hexdigest() for algo, h in f.hashes.items()}
+    end = time.time()
+    t = end - start
+    results = '\n\n'.join("{}: {}".format(algo.upper(), h) for algo, h in sorted(hashes.items()))
+
+    message = "Results for {}:\n\n{}\nCompleted in {} seconds".format(os.path.abspath(args.path), results,t )
+    print(message)
+    if not args.quiet:
+        mbox = eg.buttonbox(msg=message, title="PyFileHash", choices=["OK"], cancel_choice="OK", run=False)
+        mbox.ui.boxRoot.iconbitmap(icon_path)
+        mbox.run()
