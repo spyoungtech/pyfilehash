@@ -8,6 +8,8 @@ class FileLoader(object):
     def __init__(self, fp, algorithm):
         self.fp = fp
         self.file_size = os.stat(self.fp).st_size
+        if self.file_size == 0:
+            raise IOError("Size of specified file is 0")
         self.chunk_size = int(self.file_size / 500) - 1 
         self.file = open(self.fp, 'rb')
         self.progress = 0
